@@ -1,14 +1,18 @@
 # cryptopanic-go
 
+![Cryptopanic API Golang](https://i.postimg.cc/fb2L459H/cryptopanic-golang-library.jpg)
+
 [![Go Reference](https://pkg.go.dev/badge/github.com/tigusigalpa/cryptopanic-go.svg)](https://pkg.go.dev/github.com/tigusigalpa/cryptopanic-go)
 [![CI](https://github.com/tigusigalpa/cryptopanic-go/actions/workflows/ci.yml/badge.svg)](https://github.com/tigusigalpa/cryptopanic-go/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A small, typed, context-aware Go client for the [CryptoPanic API](https://cryptopanic.com/developers/api/).
 
-Use it when your application needs to read crypto news, filter posts by currencies or sentiment, consume RSS, or access the authenticated portfolio endpoint without hand-building URLs and decoding JSON in every service.
+Use it when your application needs to read crypto news, filter posts by currencies or sentiment, consume RSS, or access
+the authenticated portfolio endpoint without hand-building URLs and decoding JSON in every service.
 
-The SDK deliberately stays close to the public CryptoPanic API. It does not invent a portfolio schema, hide server-side plan rules, or force a framework on your application.
+The SDK deliberately stays close to the public CryptoPanic API. It does not invent a portfolio schema, hide server-side
+plan rules, or force a framework on your application.
 
 ## Contents
 
@@ -26,11 +30,14 @@ The SDK deliberately stays close to the public CryptoPanic API. It does not inve
 
 ## Why this SDK?
 
-Calling a news API should leave you time to work on your product, not make you maintain another layer of URL construction and response plumbing. `cryptopanic-go` handles the predictable parts and keeps the rest visible:
+Calling a news API should leave you time to work on your product, not make you maintain another layer of URL
+construction and response plumbing. `cryptopanic-go` handles the predictable parts and keeps the rest visible:
 
 - **Typed JSON models** — work with `Post`, `PostsPage`, and related structs instead of decoding maps yourself.
-- **A context-first API** — every network method accepts `context.Context`, so deadlines and cancellation fit naturally into HTTP handlers, workers, and CLI tools.
-- **Safe credential handling** — the token is sent only where the API expects it and is redacted from pagination URLs and SDK errors.
+- **A context-first API** — every network method accepts `context.Context`, so deadlines and cancellation fit naturally
+  into HTTP handlers, workers, and CLI tools.
+- **Safe credential handling** — the token is sent only where the API expects it and is redacted from pagination URLs
+  and SDK errors.
 - **Useful errors** — inspect common HTTP failures with `errors.Is`, and get structured details with `errors.As`.
 - **Careful retries** — opt in to retries for rate limits, selected server errors, and transient network failures.
 - **No runtime dependencies** — the package uses only Go's standard library.
@@ -109,37 +116,43 @@ client := cryptopanic.New(
 )
 ```
 
-`NewFromEnv` returns `ErrMissingAuthToken` when `CRYPTOPANIC_AUTH_TOKEN` is empty. `New` accepts the token directly and returns a client immediately.
+`NewFromEnv` returns `ErrMissingAuthToken` when `CRYPTOPANIC_AUTH_TOKEN` is empty. `New` accepts the token directly and
+returns a client immediately.
 
 ## Configuration
 
 ### Environment variables
 
-`NewFromEnv` reads the token from `CRYPTOPANIC_AUTH_TOKEN`. The package does not read the plan from the environment automatically; choose it explicitly with `WithPlan` so the URL used by the application is visible in code.
+`NewFromEnv` reads the token from `CRYPTOPANIC_AUTH_TOKEN`. The package does not read the plan from the environment
+automatically; choose it explicitly with `WithPlan` so the URL used by the application is visible in code.
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `CRYPTOPANIC_AUTH_TOKEN` | CryptoPanic auth token; required by `NewFromEnv` | — |
+| Variable                 | Description                                      | Default |
+|--------------------------|--------------------------------------------------|---------|
+| `CRYPTOPANIC_AUTH_TOKEN` | CryptoPanic auth token; required by `NewFromEnv` | —       |
 
-Never commit a token, put it in a URL you log, or print it while debugging. The SDK does not log the token, include it in error messages, or expose it in pagination URLs.
+Never commit a token, put it in a URL you log, or print it while debugging. The SDK does not log the token, include it
+in error messages, or expose it in pagination URLs.
 
 ### Client options
 
-| Option | What it controls |
-|--------|------------------|
-| `WithPlan(plan)` | The plan segment used in the API path. |
-| `WithBaseURL(url)` | The API base URL, primarily useful with a mock server. The SDK appends `/{plan}/v2/`. |
-| `WithHTTPClient(client)` | A custom `*http.Client` for proxies, transports, TLS, or tests. |
-| `WithTimeout(duration)` | The timeout on the underlying `http.Client`. |
-| `WithRetryPolicy(policy)` | Retry limits and backoff settings. Retries are off by default. |
-| `WithUserAgent(value)` | Replaces the default User-Agent header. |
-| `WithSleeper(sleeper)` | Replaces retry sleeping, useful for deterministic tests. |
+| Option                    | What it controls                                                                      |
+|---------------------------|---------------------------------------------------------------------------------------|
+| `WithPlan(plan)`          | The plan segment used in the API path.                                                |
+| `WithBaseURL(url)`        | The API base URL, primarily useful with a mock server. The SDK appends `/{plan}/v2/`. |
+| `WithHTTPClient(client)`  | A custom `*http.Client` for proxies, transports, TLS, or tests.                       |
+| `WithTimeout(duration)`   | The timeout on the underlying `http.Client`.                                          |
+| `WithRetryPolicy(policy)` | Retry limits and backoff settings. Retries are off by default.                        |
+| `WithUserAgent(value)`    | Replaces the default User-Agent header.                                               |
+| `WithSleeper(sleeper)`    | Replaces retry sleeping, useful for deterministic tests.                              |
 
-The defaults are a 30-second HTTP timeout, the `growth` plan, the `cryptopanic-go/1.0.0` User-Agent, and zero retry attempts.
+The defaults are a 30-second HTTP timeout, the `growth` plan, the `cryptopanic-go/1.0.0` User-Agent, and zero retry
+attempts.
 
 ## Working with posts
 
-`Posts` accepts a `PostsQuery` value. Empty fields are omitted from the request, and the client validates only rules that are safe to check locally. The CryptoPanic server remains the authority for account permissions and values that may change over time.
+`Posts` accepts a `PostsQuery` value. Empty fields are omitted from the request, and the client validates only rules
+that are safe to check locally. The CryptoPanic server remains the authority for account permissions and values that may
+change over time.
 
 ```go
 size := 20
@@ -167,21 +180,21 @@ for _, post := range page.Results {
 
 ### Query fields
 
-| Field | Type | What it does | Plan note |
-|-------|------|--------------|-----------|
-| `Public` | `*bool` | Requests public mode when set. | All listed plans |
-| `Currencies` | `[]string` | Sends a comma-separated list such as `BTC,ETH`. | All listed plans |
-| `Regions` | `string` | Sets a region code; the API default is `en`. | All listed plans |
-| `Filter` | `Filter` | Known values include `rising`, `hot`, `bullish`, `bearish`, `important`, `saved`, and `lol`. Custom values are allowed. | All listed plans |
-| `Kind` | `Kind` | `news`, `media`, or `all`. | All listed plans |
-| `Following` | `*bool` | Private-only following mode. | All listed plans |
-| `LastPull` | `*time.Time` | Sends an RFC 3339 / ISO-8601 timestamp. | Enterprise-gated |
-| `PanicPeriod` | `PanicPeriod` | `1h`, `6h`, or `24h`. | Enterprise-gated |
-| `PanicSort` | `PanicSort` | `asc` or `desc`; requires `PanicPeriod` locally. | Enterprise-gated |
-| `Size` | `*int` | Page size from 1 through 50. | Enterprise-gated |
-| `Page` | `*int` | Page number from 1 through 50; the API default is 1. | All listed plans |
-| `WithContent` | `*bool` | Requests full post content. | Enterprise-gated |
-| `Search` | `string` | Searches for a non-empty string. | Enterprise-gated |
+| Field         | Type          | What it does                                                                                                            | Plan note        |
+|---------------|---------------|-------------------------------------------------------------------------------------------------------------------------|------------------|
+| `Public`      | `*bool`       | Requests public mode when set.                                                                                          | All listed plans |
+| `Currencies`  | `[]string`    | Sends a comma-separated list such as `BTC,ETH`.                                                                         | All listed plans |
+| `Regions`     | `string`      | Sets a region code; the API default is `en`.                                                                            | All listed plans |
+| `Filter`      | `Filter`      | Known values include `rising`, `hot`, `bullish`, `bearish`, `important`, `saved`, and `lol`. Custom values are allowed. | All listed plans |
+| `Kind`        | `Kind`        | `news`, `media`, or `all`.                                                                                              | All listed plans |
+| `Following`   | `*bool`       | Private-only following mode.                                                                                            | All listed plans |
+| `LastPull`    | `*time.Time`  | Sends an RFC 3339 / ISO-8601 timestamp.                                                                                 | Enterprise-gated |
+| `PanicPeriod` | `PanicPeriod` | `1h`, `6h`, or `24h`.                                                                                                   | Enterprise-gated |
+| `PanicSort`   | `PanicSort`   | `asc` or `desc`; requires `PanicPeriod` locally.                                                                        | Enterprise-gated |
+| `Size`        | `*int`        | Page size from 1 through 50.                                                                                            | Enterprise-gated |
+| `Page`        | `*int`        | Page number from 1 through 50; the API default is 1.                                                                    | All listed plans |
+| `WithContent` | `*bool`       | Requests full post content.                                                                                             | Enterprise-gated |
+| `Search`      | `string`      | Searches for a non-empty string.                                                                                        | Enterprise-gated |
 
 For pointer fields such as `Page`, `Size`, `Public`, and `WithContent`, use the package helpers where convenient:
 
@@ -203,13 +216,15 @@ cryptopanic.PanicSortDesc
 cryptopanic.PlanEnterprise
 ```
 
-The complete set is available in the package documentation on [pkg.go.dev](https://pkg.go.dev/github.com/tigusigalpa/cryptopanic-go).
+The complete set is available in the package documentation
+on [pkg.go.dev](https://pkg.go.dev/github.com/tigusigalpa/cryptopanic-go).
 
 ## Other endpoints
 
 ### Portfolio
 
-`Portfolio` returns `PortfolioResponse.Raw` as `json.RawMessage`. This is intentional: the public API reference does not define a complete stable portfolio schema, so the SDK preserves the server response instead of guessing at a model.
+`Portfolio` returns `PortfolioResponse.Raw` as `json.RawMessage`. This is intentional: the public API reference does not
+define a complete stable portfolio schema, so the SDK preserves the server response instead of guessing at a model.
 
 ```go
 portfolio, err := client.Portfolio(ctx)
@@ -244,35 +259,40 @@ if err != nil {
 fmt.Println(feed.Body)
 ```
 
-`PostsRSS` uses the same `PostsQuery` filters and adds `format=rss`. The public reference documents the RSS response as 20 items regardless of plan.
+`PostsRSS` uses the same `PostsQuery` filters and adds `format=rss`. The public reference documents the RSS response as
+20 items regardless of plan.
 
 ## Supported endpoints
 
-The CryptoPanic public API documentation uses one shared API Reference page, so the links below intentionally point to the same page.
+The CryptoPanic public API documentation uses one shared API Reference page, so the links below intentionally point to
+the same page.
 
-| Endpoint | Go method | Return value |
-|----------|-----------|--------------|
-| `GET /posts/` | `client.Posts(ctx, query)` | `*PostsPage` |
-| `GET /portfolio/` | `client.Portfolio(ctx)` | `*PortfolioResponse` |
-| `GET /posts/?format=rss` | `client.PostsRSS(ctx, query)` | `*RSSResponse` |
-| `GET /news/rss/` | `client.NewsRSS(ctx)` | `*RSSResponse` |
+| Endpoint                 | Go method                     | Return value         |
+|--------------------------|-------------------------------|----------------------|
+| `GET /posts/`            | `client.Posts(ctx, query)`    | `*PostsPage`         |
+| `GET /portfolio/`        | `client.Portfolio(ctx)`       | `*PortfolioResponse` |
+| `GET /posts/?format=rss` | `client.PostsRSS(ctx, query)` | `*RSSResponse`       |
+| `GET /news/rss/`         | `client.NewsRSS(ctx)`         | `*RSSResponse`       |
 
-See the [CryptoPanic API reference](https://cryptopanic.com/developers/api/) and [plans page](https://cryptopanic.com/developers/api/plans) for server-side behavior.
+See the [CryptoPanic API reference](https://cryptopanic.com/developers/api/)
+and [plans page](https://cryptopanic.com/developers/api/plans) for server-side behavior.
 
 ## Response models
 
 ### `PostsPage`
 
-| Field | Meaning |
-|-------|---------|
-| `Results` | Posts returned for the current page. |
-| `Next` / `Previous` | Redacted pagination URLs; empty when unavailable. |
-| `HasNext` / `HasPrevious` | Whether another page exists. |
+| Field                       | Meaning                                                        |
+|-----------------------------|----------------------------------------------------------------|
+| `Results`                   | Posts returned for the current page.                           |
+| `Next` / `Previous`         | Redacted pagination URLs; empty when unavailable.              |
+| `HasNext` / `HasPrevious`   | Whether another page exists.                                   |
 | `NextPage` / `PreviousPage` | Page numbers extracted from the pagination URLs, when present. |
 
 ### `Post`
 
-A post includes its ID, slug, title, description, publication and creation timestamps, kind, source, original URL, CryptoPanic URL, image, tagged instruments, votes, author, and optional content. Enterprise-gated or potentially omitted values are pointers, so check them before use:
+A post includes its ID, slug, title, description, publication and creation timestamps, kind, source, original URL,
+CryptoPanic URL, image, tagged instruments, votes, author, and optional content. Enterprise-gated or potentially omitted
+values are pointers, so check them before use:
 
 ```go
 for _, post := range page.Results {
@@ -292,9 +312,11 @@ Unknown additive fields from the server do not make JSON decoding fail.
 
 ## Pagination
 
-CryptoPanic returns `next` and `previous` URLs in the response envelope. The SDK exposes those URLs only after redacting the `auth_token` value, and extracts the page number when it is present.
+CryptoPanic returns `next` and `previous` URLs in the response envelope. The SDK exposes those URLs only after redacting
+the `auth_token` value, and extracts the page number when it is present.
 
-The client does not accept a pagination URL directly. Request the next page using `NextPage` or build the next `PostsQuery` yourself:
+The client does not accept a pagination URL directly. Request the next page using `NextPage` or build the next
+`PostsQuery` yourself:
 
 ```go
 page, err := client.Posts(ctx, cryptopanic.PostsQuery{Page: cryptopanic.IntPtr(1)})
@@ -356,18 +378,21 @@ if err != nil {
 
 ### Sentinel errors
 
-| Sentinel | Meaning |
-|----------|---------|
-| `ErrMissingAuthToken` | `NewFromEnv` could not find a token. |
-| `ErrInvalidQuery` | Local query validation failed. |
-| `ErrUnauthorized` | The API returned HTTP 401. |
-| `ErrForbidden` | The API returned HTTP 403. |
-| `ErrRateLimited` | The API returned HTTP 429 after retries were exhausted. |
-| `ErrServerError` | The API returned HTTP 500. |
+| Sentinel              | Meaning                                                 |
+|-----------------------|---------------------------------------------------------|
+| `ErrMissingAuthToken` | `NewFromEnv` could not find a token.                    |
+| `ErrInvalidQuery`     | Local query validation failed.                          |
+| `ErrUnauthorized`     | The API returned HTTP 401.                              |
+| `ErrForbidden`        | The API returned HTTP 403.                              |
+| `ErrRateLimited`      | The API returned HTTP 429 after retries were exhausted. |
+| `ErrServerError`      | The API returned HTTP 500.                              |
 
-`APIError` preserves `StatusCode`, a human-readable `Message`, a redacted `RawBody` truncated to 512 bytes, `RequestID` when supplied by the server, and the number of retry attempts in `Retried`. The token is not included in the error string or raw body.
+`APIError` preserves `StatusCode`, a human-readable `Message`, a redacted `RawBody` truncated to 512 bytes, `RequestID`
+when supplied by the server, and the number of retry attempts in `Retried`. The token is not included in the error
+string or raw body.
 
-Transport errors and context cancellation are returned as wrapped standard-library errors, so `errors.Is(err, context.DeadlineExceeded)` and similar checks remain useful.
+Transport errors and context cancellation are returned as wrapped standard-library errors, so
+`errors.Is(err, context.DeadlineExceeded)` and similar checks remain useful.
 
 ## Retries and rate limits
 
@@ -383,11 +408,14 @@ client := cryptopanic.New(token,
 )
 ```
 
-The policy counts retry attempts, not total requests. `MaxAttempts: 3` means up to four HTTP requests: one initial request plus three retries.
+The policy counts retry attempts, not total requests. `MaxAttempts: 3` means up to four HTTP requests: one initial
+request plus three retries.
 
 - **Retried HTTP statuses:** 429, 500, 502, and 503.
-- **Retried network failures:** timeouts, temporary network errors, connection interruptions, and EOF-style read failures.
-- **Not retried:** 400, 401, 403, 404, malformed URLs, unsupported schemes, TLS certificate failures, and other permanent errors.
+- **Retried network failures:** timeouts, temporary network errors, connection interruptions, and EOF-style read
+  failures.
+- **Not retried:** 400, 401, 403, 404, malformed URLs, unsupported schemes, TLS certificate failures, and other
+  permanent errors.
 - **Backoff:** exponential with jitter, capped by `MaxDelay`.
 - **Server guidance:** `Retry-After` is honored when present and capped by `MaxDelay`.
 - **Cancellation:** context cancellation stops waiting and retrying immediately.
@@ -396,7 +424,8 @@ Retries cannot fix an invalid token, an unavailable plan feature, or an invalid 
 
 ## Contexts and timeouts
 
-Every network-facing method accepts `context.Context`. In a web server or background worker, give each operation a deadline:
+Every network-facing method accepts `context.Context`. In a web server or background worker, give each operation a
+deadline:
 
 ```go
 ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -408,7 +437,8 @@ if errors.Is(err, context.DeadlineExceeded) {
 }
 ```
 
-`WithTimeout` sets the default timeout on the underlying `http.Client`. A request context is still the best way to set a shorter, operation-specific deadline or cancel work when the caller disconnects.
+`WithTimeout` sets the default timeout on the underlying `http.Client`. A request context is still the best way to set a
+shorter, operation-specific deadline or cancel work when the caller disconnects.
 
 ## Custom HTTP clients and test servers
 
@@ -419,15 +449,20 @@ httpClient := &http.Client{Timeout: 20 * time.Second}
 client := cryptopanic.New(token, cryptopanic.WithHTTPClient(httpClient))
 ```
 
-Use `WithBaseURL` with `httptest.Server` or another mock server. The value should not include the plan segment or trailing slash; the SDK appends `/{plan}/v2/` automatically.
+Use `WithBaseURL` with `httptest.Server` or another mock server. The value should not include the plan segment or
+trailing slash; the SDK appends `/{plan}/v2/` automatically.
 
 `WithSleeper` is available when tests need to observe retry delays without actually sleeping.
 
 ## Plan caveats
 
-The free Developer API plan was discontinued. The SDK still exposes the documented `PlanDeveloper` value for compatibility, but it does not claim that an account has access to it.
+The free Developer API plan was discontinued. The SDK still exposes the documented `PlanDeveloper` value for
+compatibility, but it does not claim that an account has access to it.
 
-Parameters such as `last_pull`, `panic_period`, `size`, `with_content`, and `search` may be plan-gated. The SDK validates obvious syntax locally, while CryptoPanic remains the authority for account entitlements and evolving server rules. Check your [account dashboard](https://cryptopanic.com/account/) and the [plans page](https://cryptopanic.com/developers/api/plans) for current commercial details.
+Parameters such as `last_pull`, `panic_period`, `size`, `with_content`, and `search` may be plan-gated. The SDK
+validates obvious syntax locally, while CryptoPanic remains the authority for account entitlements and evolving server
+rules. Check your [account dashboard](https://cryptopanic.com/account/) and
+the [plans page](https://cryptopanic.com/developers/api/plans) for current commercial details.
 
 ## Testing and development
 
@@ -439,7 +474,8 @@ gofmt -l .
 go vet ./...
 ```
 
-The test suite uses `httptest.Server` and fixtures under `testdata/`; it does not make live API calls. The `Sleeper` abstraction keeps retry tests fast and deterministic.
+The test suite uses `httptest.Server` and fixtures under `testdata/`; it does not make live API calls. The `Sleeper`
+abstraction keeps retry tests fast and deterministic.
 
 For local development:
 
@@ -451,7 +487,9 @@ go test ./...
 
 ## Release, security, and contribution
 
-This project follows [Semantic Versioning](https://semver.org/). See [CHANGELOG.md](CHANGELOG.md) for release history, [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines, and [SECURITY.md](SECURITY.md) for vulnerability reporting and credential-safety guidance.
+This project follows [Semantic Versioning](https://semver.org/). See [CHANGELOG.md](CHANGELOG.md) for release
+history, [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines, and [SECURITY.md](SECURITY.md) for
+vulnerability reporting and credential-safety guidance.
 
 ## License
 
