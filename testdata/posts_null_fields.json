@@ -1,0 +1,25 @@
+{
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 12347,
+      "slug": "simple-post",
+      "title": "Simple Post",
+      "description": "A post with minimal fields and null optionals.",
+      "published_at": null,
+      "created_at": null,
+      "kind": "news",
+      "source": null,
+      "original_url": "",
+      "url": "https://cryptopanic.com/news/12347/simple-post",
+      "image": null,
+      "instruments": [],
+      "votes": null,
+      "panic_score": null,
+      "panic_score_1h": null,
+      "author": null,
+      "content": null
+    }
+  ]
+}

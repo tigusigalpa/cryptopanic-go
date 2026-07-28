@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>CryptoPanic News</title>
+    <link>https://cryptopanic.com/news/</link>
+    <description>Cryptocurrency News Feed</description>
+    <item>
+      <title>Bitcoin Surges Past $100K</title>
+      <link>https://cryptopanic.com/news/12345/bitcoin-surges-past-100k/</link>
+      <description>Bitcoin has broken through the $100,000 mark.</description>
+      <pubDate>Wed, 15 Jan 2025 10:30:00 GMT</pubDate>
+      <guid>https://cryptopanic.com/news/12345/</guid>
+    </item>
+    <item>
+      <title>Ethereum 2.0 Staking Reaches New High</title>
+      <link>https://cryptopanic.com/news/12346/ethereum-2-0-staking-reaches-new-high/</link>
+      <description>The total value staked on Ethereum 2.0 has reached a new all-time high.</description>
+      <pubDate>Wed, 15 Jan 2025 09:00:00 GMT</pubDate>
+      <guid>https://cryptopanic.com/news/12346/</guid>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,8 @@
+{
+  "portfolio": [
+    {"code": "BTC", "title": "Bitcoin", "amount": 0.5},
+    {"code": "ETH", "title": "Ethereum", "amount": 10.0}
+  ],
+  "total_value": 75000.00,
+  "currency": "USD"
+}
