@@ -46,6 +46,15 @@ func (noDelaySleeper) Sleep(d time.Duration) bool {
 	return true
 }
 
+// writeResponse writes a mock HTTP response and fails the test if writing it
+// unexpectedly fails.
+func writeResponse(t *testing.T, w http.ResponseWriter, body []byte) {
+	t.Helper()
+	if _, err := w.Write(body); err != nil {
+		t.Errorf("failed to write mock response: %v", err)
+	}
+}
+
 // --- Client construction tests ---
 
 func TestNew_Defaults(t *testing.T) {
@@ -253,7 +262,7 @@ func TestPosts_Success(t *testing.T) {
 			t.Errorf("expected auth_token in query, got %q", r.URL.Query().Get("auth_token"))
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(postsData)
+		writeResponse(t, w, postsData)
 	}))
 	defer server.Close()
 
@@ -307,7 +316,7 @@ func TestPosts_PaginationRedaction(t *testing.T) {
 	postsData := mustReadFile(t, "testdata/posts.json")
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(postsData)
+		writeResponse(t, w, postsData)
 	}))
 	defer server.Close()
 
@@ -340,7 +349,7 @@ func TestPosts_NullFields(t *testing.T) {
 	postsData := mustReadFile(t, "testdata/posts_null_fields.json")
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(postsData)
+		writeResponse(t, w, postsData)
 	}))
 	defer server.Close()
 
@@ -401,7 +410,7 @@ func TestPosts_InvalidQuery(t *testing.T) {
 func TestPosts_MalformedJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"results": [invalid}`))
+		writeResponse(t, w, []byte(`{"results": [invalid}`))
 	}))
 	defer server.Close()
 
@@ -417,7 +426,7 @@ func TestPosts_QueryEncoding(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedQuery = r.URL.RawQuery
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"results": []}`))
+		writeResponse(t, w, []byte(`{"results": []}`))
 	}))
 	defer server.Close()
 
@@ -453,7 +462,7 @@ func TestPosts_PlanInURL(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedPath = r.URL.Path
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"results": []}`))
+		writeResponse(t, w, []byte(`{"results": []}`))
 	}))
 	defer server.Close()
 
@@ -476,7 +485,7 @@ func TestPortfolio_Success(t *testing.T) {
 			t.Errorf("expected portfolio in path: %s", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(portfolioData)
+		writeResponse(t, w, portfolioData)
 	}))
 	defer server.Close()
 
@@ -506,7 +515,7 @@ func TestPostsRSS_Success(t *testing.T) {
 			t.Errorf("expected format=rss, got %q", r.URL.Query().Get("format"))
 		}
 		w.Header().Set("Content-Type", "application/rss+xml")
-		w.Write(rssData)
+		writeResponse(t, w, rssData)
 	}))
 	defer server.Close()
 
@@ -527,7 +536,7 @@ func TestNewsRSS_Success(t *testing.T) {
 	rssData := mustReadFile(t, "testdata/rss.xml")
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/rss+xml")
-		w.Write(rssData)
+		writeResponse(t, w, rssData)
 	}))
 	defer server.Close()
 
@@ -546,7 +555,7 @@ func TestNewsRSS_Success(t *testing.T) {
 func TestPosts_Unauthorized(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": "Invalid auth token"}`))
+		writeResponse(t, w, []byte(`{"error": "Invalid auth token"}`))
 	}))
 	defer server.Close()
 
@@ -570,7 +579,7 @@ func TestPosts_Unauthorized(t *testing.T) {
 func TestPosts_Forbidden(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error": "Plan access restricted"}`))
+		writeResponse(t, w, []byte(`{"error": "Plan access restricted"}`))
 	}))
 	defer server.Close()
 
@@ -584,7 +593,7 @@ func TestPosts_Forbidden(t *testing.T) {
 func TestPosts_RateLimited(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTooManyRequests)
-		w.Write([]byte(`{"error": "Rate limit exceeded"}`))
+		writeResponse(t, w, []byte(`{"error": "Rate limit exceeded"}`))
 	}))
 	defer server.Close()
 
@@ -598,7 +607,7 @@ func TestPosts_RateLimited(t *testing.T) {
 func TestPosts_ServerError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error": "Internal server error"}`))
+		writeResponse(t, w, []byte(`{"error": "Internal server error"}`))
 	}))
 	defer server.Close()
 
@@ -612,7 +621,7 @@ func TestPosts_ServerError(t *testing.T) {
 func TestPosts_OtherStatus(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error": "Not found"}`))
+		writeResponse(t, w, []byte(`{"error": "Not found"}`))
 	}))
 	defer server.Close()
 
@@ -635,7 +644,7 @@ func TestPosts_OtherStatus(t *testing.T) {
 func TestErrorDoesNotLeakToken(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": "Invalid token"}`))
+		writeResponse(t, w, []byte(`{"error": "Invalid token"}`))
 	}))
 	defer server.Close()
 
@@ -653,7 +662,7 @@ func TestErrorDoesNotLeakToken(t *testing.T) {
 func TestAPIError_RawBodyDoesNotContainToken(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error": "access denied for test-secret-token-12345"}`))
+		writeResponse(t, w, []byte(`{"error": "access denied for test-secret-token-12345"}`))
 	}))
 	defer server.Close()
 
@@ -688,7 +697,7 @@ func TestRedactURL(t *testing.T) {
 func TestPosts_ContextCancelled(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(100 * time.Millisecond)
-		w.Write([]byte(`{"results": []}`))
+		writeResponse(t, w, []byte(`{"results": []}`))
 	}))
 	defer server.Close()
 
@@ -704,7 +713,7 @@ func TestPosts_ContextCancelled(t *testing.T) {
 func TestPosts_ContextTimeout(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(200 * time.Millisecond)
-		w.Write([]byte(`{"results": []}`))
+		writeResponse(t, w, []byte(`{"results": []}`))
 	}))
 	defer server.Close()
 
@@ -724,11 +733,11 @@ func TestPosts_RetryOn429(t *testing.T) {
 		if count < 3 {
 			w.Header().Set("Retry-After", "0")
 			w.WriteHeader(http.StatusTooManyRequests)
-			w.Write([]byte(`{"error": "rate limited"}`))
+			writeResponse(t, w, []byte(`{"error": "rate limited"}`))
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"results": []}`))
+		writeResponse(t, w, []byte(`{"results": []}`))
 	}))
 	defer server.Close()
 
@@ -747,7 +756,7 @@ func TestPosts_RetryExhausted(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&attempts, 1)
 		w.WriteHeader(http.StatusTooManyRequests)
-		w.Write([]byte(`{"error": "rate limited"}`))
+		writeResponse(t, w, []byte(`{"error": "rate limited"}`))
 	}))
 	defer server.Close()
 
@@ -767,11 +776,11 @@ func TestPosts_RetryOn500(t *testing.T) {
 		count := atomic.AddInt32(&attempts, 1)
 		if count < 2 {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error": "server error"}`))
+			writeResponse(t, w, []byte(`{"error": "server error"}`))
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"results": []}`))
+		writeResponse(t, w, []byte(`{"results": []}`))
 	}))
 	defer server.Close()
 
@@ -787,7 +796,7 @@ func TestPosts_NoRetryOn401(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&attempts, 1)
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": "unauthorized"}`))
+		writeResponse(t, w, []byte(`{"error": "unauthorized"}`))
 	}))
 	defer server.Close()
 
@@ -808,11 +817,11 @@ func TestPosts_RetryAfterHeader(t *testing.T) {
 		if count < 2 {
 			w.Header().Set("Retry-After", "0")
 			w.WriteHeader(http.StatusTooManyRequests)
-			w.Write([]byte(`{"error": "rate limited"}`))
+			writeResponse(t, w, []byte(`{"error": "rate limited"}`))
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"results": []}`))
+		writeResponse(t, w, []byte(`{"results": []}`))
 	}))
 	defer server.Close()
 
@@ -826,7 +835,7 @@ func TestPosts_RetryAfterHeader(t *testing.T) {
 func TestPosts_RetryCancelledDuringSleep(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTooManyRequests)
-		w.Write([]byte(`{"error": "rate limited"}`))
+		writeResponse(t, w, []byte(`{"error": "rate limited"}`))
 	}))
 	defer server.Close()
 
@@ -851,7 +860,7 @@ func (cancelSleeper) Sleep(d time.Duration) bool {
 func TestPosts_DefaultRetrySleepRespectsContextCancellation(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTooManyRequests)
-		w.Write([]byte(`{"error": "rate limited"}`))
+		writeResponse(t, w, []byte(`{"error": "rate limited"}`))
 	}))
 	defer server.Close()
 
@@ -904,7 +913,7 @@ func TestWithBaseURL_TrimsTrailingSlash(t *testing.T) {
 func TestPosts_AdditiveFields(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{
+		writeResponse(t, w, []byte(`{
 			"next": null,
 			"previous": null,
 			"results": [{
@@ -942,7 +951,7 @@ func TestPosts_TokenInjectedInQuery(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenSeen = r.URL.Query().Get("auth_token")
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"results": []}`))
+		writeResponse(t, w, []byte(`{"results": []}`))
 	}))
 	defer server.Close()
 
@@ -992,7 +1001,7 @@ func TestPosts_UserAgent(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ua = r.Header.Get("User-Agent")
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"results": []}`))
+		writeResponse(t, w, []byte(`{"results": []}`))
 	}))
 	defer server.Close()
 
@@ -1022,7 +1031,7 @@ func TestPosts_RequestID(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Request-ID", "req-abc-123")
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error": "forbidden"}`))
+		writeResponse(t, w, []byte(`{"error": "forbidden"}`))
 	}))
 	defer server.Close()
 
@@ -1061,7 +1070,7 @@ func TestPosts_EmptyBodyError(t *testing.T) {
 func TestPortfolio_Unauthorized(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": "unauthorized"}`))
+		writeResponse(t, w, []byte(`{"error": "unauthorized"}`))
 	}))
 	defer server.Close()
 
@@ -1077,7 +1086,7 @@ func TestPortfolio_Unauthorized(t *testing.T) {
 func TestPostsRSS_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error": "unauthorized"}`))
+		writeResponse(t, w, []byte(`{"error": "unauthorized"}`))
 	}))
 	defer server.Close()
 
@@ -1116,7 +1125,7 @@ func TestPosts_NilQueryValues(t *testing.T) {
 func TestDoGet_NilOut(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"results": []}`))
+		writeResponse(t, w, []byte(`{"results": []}`))
 	}))
 	defer server.Close()
 
@@ -1134,7 +1143,7 @@ func TestPostsRSS_QueryEncoding(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		capturedQuery = r.URL.RawQuery
 		w.Header().Set("Content-Type", "application/rss+xml")
-		w.Write([]byte(`<?xml version="1.0"?><rss></rss>`))
+		writeResponse(t, w, []byte(`<?xml version="1.0"?><rss></rss>`))
 	}))
 	defer server.Close()
 
