@@ -124,7 +124,7 @@ func (c *Client) doGetWithRetry(ctx context.Context, path string, query url.Valu
 		return meta, ctx.Err()
 	}
 
-	return meta, newAPIError(resp.StatusCode, extractMessage(body), body, meta.RequestID, retried)
+	return meta, newAPIError(resp.StatusCode, extractMessage(body, c.authToken), body, meta.RequestID, retried, c.authToken)
 }
 
 // doGetRaw performs an HTTP GET request and returns the raw body as
@@ -190,7 +190,7 @@ func (c *Client) doGetRawWithRetry(ctx context.Context, path string, query url.V
 		return "", meta, ctx.Err()
 	}
 
-	return "", meta, newAPIError(resp.StatusCode, extractMessage(body), body, meta.RequestID, retried)
+	return "", meta, newAPIError(resp.StatusCode, extractMessage(body, c.authToken), body, meta.RequestID, retried, c.authToken)
 }
 
 // shouldRetryStatus returns true for HTTP status codes that warrant
@@ -218,7 +218,12 @@ func (c *Client) shouldRetryNetwork(err error) bool {
 
 	var netErr net.Error
 	if errors.As(err, &netErr) {
-		return true
+		if netErr.Timeout() {
+			return true
+		}
+		if temporary, ok := netErr.(interface{ Temporary() bool }); ok {
+			return temporary.Temporary()
+		}
 	}
 
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -239,9 +244,19 @@ func (c *Client) retryDelay(attempt int) time.Duration {
 	if max <= 0 {
 		max = DefaultRetryMaxDelay
 	}
-	delay := base * time.Duration(1<<uint(attempt))
-	if delay > max {
-		delay = max
+	if base > max {
+		base = max
+	}
+	delay := base
+	for i := 0; i < attempt && delay < max; i++ {
+		if delay > max/2 {
+			delay = max
+			break
+		}
+		delay *= 2
+	}
+	if delay <= 1 {
+		return 0
 	}
 	jitter := time.Duration(rand.Int63n(int64(delay) / 2))
 	return delay/2 + jitter
@@ -269,18 +284,24 @@ func (c *Client) retryDelayFromHeaders(headers http.Header, attempt int) time.Du
 // sleeper indicates the sleep was interrupted.
 func (c *Client) sleepWithCtx(ctx context.Context, d time.Duration) bool {
 	if d <= 0 {
-		return true
+		return ctx.Err() == nil
 	}
 	if err := ctx.Err(); err != nil {
 		return false
 	}
-	return c.sleeper.Sleep(d)
+	if sleeper, ok := c.sleeper.(interface {
+		SleepContext(context.Context, time.Duration) bool
+	}); ok {
+		return sleeper.SleepContext(ctx, d)
+	}
+	return c.sleeper.Sleep(d) && ctx.Err() == nil
 }
 
 // extractMessage attempts to pull a human-readable message from a
 // JSON error response body. If the body cannot be parsed, a generic
 // message with a truncated snippet is returned.
-func extractMessage(body []byte) string {
+func extractMessage(body []byte, authToken string) string {
+	body = redactToken(body, authToken)
 	var parsed struct {
 		Message string `json:"message"`
 		Msg     string `json:"msg"`
@@ -305,6 +326,24 @@ func extractMessage(body []byte) string {
 		snippet = snippet[:200]
 	}
 	return snippet
+}
+
+// redactToken removes the configured authentication token from data supplied
+// by the server before it is exposed in an error. Although the API should not
+// echo credentials, protecting both error messages and RawBody prevents an
+// accidental server echo from leaking a caller's secret into logs.
+func redactToken(body []byte, authToken string) []byte {
+	if len(body) == 0 || authToken == "" {
+		return body
+	}
+
+	redacted := string(body)
+	for _, value := range []string{authToken, url.QueryEscape(authToken), url.PathEscape(authToken)} {
+		if value != "" {
+			redacted = strings.ReplaceAll(redacted, value, "[REDACTED]")
+		}
+	}
+	return []byte(redacted)
 }
 
 // redactURL removes the auth_token query parameter from a URL string

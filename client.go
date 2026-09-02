@@ -8,6 +8,7 @@
 package cryptopanic
 
 import (
+	"context"
 	"net/http"
 	"time"
 )
@@ -89,6 +90,21 @@ type defaultSleeper struct{}
 func (defaultSleeper) Sleep(d time.Duration) bool {
 	time.Sleep(d)
 	return true
+}
+
+// SleepContext waits for d or returns early when ctx is cancelled.
+// It is intentionally an optional extension to Sleeper, so existing custom
+// Sleeper implementations remain source-compatible.
+func (defaultSleeper) SleepContext(ctx context.Context, d time.Duration) bool {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+
+	select {
+	case <-ctx.Done():
+		return false
+	case <-timer.C:
+		return true
+	}
 }
 
 // New creates a new CryptoPanic API client authenticated with the

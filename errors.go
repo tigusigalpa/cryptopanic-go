@@ -69,11 +69,11 @@ func (w *wrappedAPIError) Unwrap() []error {
 // newAPIError builds an error value for the given status code, message
 // and raw body, attaching the appropriate sentinel error when the
 // status code is a well-known one (401, 403, 429, 500).
-func newAPIError(statusCode int, message string, rawBody []byte, requestID string, retried int) error {
+func newAPIError(statusCode int, message string, rawBody []byte, requestID string, retried int, authToken string) error {
 	apiErr := &APIError{
 		StatusCode: statusCode,
 		Message:    message,
-		RawBody:    truncateBody(rawBody),
+		RawBody:    truncateBody(redactToken(rawBody, authToken)),
 		RequestID:  requestID,
 		Retried:    retried,
 	}

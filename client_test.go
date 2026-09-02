@@ -653,7 +653,7 @@ func TestErrorDoesNotLeakToken(t *testing.T) {
 func TestAPIError_RawBodyDoesNotContainToken(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error": "access denied"}`))
+		w.Write([]byte(`{"error": "access denied for test-secret-token-12345"}`))
 	}))
 	defer server.Close()
 
@@ -666,6 +666,9 @@ func TestAPIError_RawBodyDoesNotContainToken(t *testing.T) {
 	bodyStr := string(apiErr.RawBody)
 	if strings.Contains(bodyStr, testToken) {
 		t.Errorf("raw body leaks token: %s", bodyStr)
+	}
+	if strings.Contains(apiErr.Message, testToken) {
+		t.Errorf("error message leaks token: %s", apiErr.Message)
 	}
 }
 
@@ -843,6 +846,57 @@ type cancelSleeper struct{}
 
 func (cancelSleeper) Sleep(d time.Duration) bool {
 	return false
+}
+
+func TestPosts_DefaultRetrySleepRespectsContextCancellation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+		w.Write([]byte(`{"error": "rate limited"}`))
+	}))
+	defer server.Close()
+
+	client := New(testToken,
+		WithBaseURL(server.URL),
+		WithRetryPolicy(RetryPolicy{MaxAttempts: 1, BaseDelay: time.Second}),
+	)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		time.Sleep(25 * time.Millisecond)
+		cancel()
+	}()
+
+	start := time.Now()
+	_, err := client.Posts(ctx, PostsQuery{})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context cancellation, got %v", err)
+	}
+	if elapsed := time.Since(start); elapsed > 500*time.Millisecond {
+		t.Fatalf("retry sleep ignored context cancellation: %s", elapsed)
+	}
+}
+
+func TestRetryDelayHandlesTinyBaseDelayAndLargeAttempt(t *testing.T) {
+	client := New(testToken, WithRetryPolicy(RetryPolicy{
+		MaxAttempts: 100,
+		BaseDelay:   time.Nanosecond,
+		MaxDelay:    time.Second,
+	}))
+
+	if delay := client.retryDelay(0); delay != 0 {
+		t.Fatalf("expected zero jittered delay for one nanosecond base delay, got %s", delay)
+	}
+	if delay := client.retryDelay(100); delay < 0 || delay > time.Second {
+		t.Fatalf("expected bounded delay for large retry attempt, got %s", delay)
+	}
+}
+
+func TestWithBaseURL_TrimsTrailingSlash(t *testing.T) {
+	client := New(testToken, WithBaseURL("https://example.test/"))
+	if got := client.buildURL(client.apiPath("/posts/"), nil); got != "https://example.test/growth/v2/posts/?auth_token="+testToken {
+		t.Fatalf("unexpected URL: %s", got)
+	}
 }
 
 // --- Additive fields test ---

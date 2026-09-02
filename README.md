@@ -1,10 +1,13 @@
-# cryptopanic-go
+# CryptoPanic Golang SDK
 
 ![Cryptopanic API Golang](https://i.postimg.cc/fb2L459H/cryptopanic-golang-library.jpg)
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/tigusigalpa/cryptopanic-go.svg)](https://pkg.go.dev/github.com/tigusigalpa/cryptopanic-go)
-[![CI](https://github.com/tigusigalpa/cryptopanic-go/actions/workflows/ci.yml/badge.svg)](https://github.com/tigusigalpa/cryptopanic-go/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/tigusigalpa/cryptopanic-go/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tigusigalpa/cryptopanic-go/actions/workflows/ci.yml)
+[![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat-square&logo=go)](https://go.dev/)
+[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
+[![Codecov](https://codecov.io/gh/tigusigalpa/cryptopanic-go/graph/badge.svg)](https://codecov.io/gh/tigusigalpa/cryptopanic-go)
+[![GitHub Release](https://img.shields.io/github/v/release/tigusigalpa/cryptopanic-go?style=flat-square)](https://github.com/tigusigalpa/cryptopanic-go/releases)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue?style=flat-square&logo=go)](https://pkg.go.dev/github.com/tigusigalpa/cryptopanic-go)
 
 A small, typed, context-aware Go client for the [CryptoPanic API](https://cryptopanic.com/developers/api/).
 
@@ -449,8 +452,8 @@ httpClient := &http.Client{Timeout: 20 * time.Second}
 client := cryptopanic.New(token, cryptopanic.WithHTTPClient(httpClient))
 ```
 
-Use `WithBaseURL` with `httptest.Server` or another mock server. The value should not include the plan segment or
-trailing slash; the SDK appends `/{plan}/v2/` automatically.
+Use `WithBaseURL` with `httptest.Server` or another mock server. The value should not include the plan segment; an
+optional trailing slash is removed. The SDK appends `/{plan}/v2/` automatically.
 
 `WithSleeper` is available when tests need to observe retry delays without actually sleeping.
 

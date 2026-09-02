@@ -3,6 +3,7 @@ package cryptopanic
 import (
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -25,12 +26,12 @@ func WithPlan(plan Plan) Option {
 
 // WithBaseURL overrides the default CryptoPanic API base URL. This is
 // primarily useful for testing against a mock server. The URL should
-// not include the plan segment or trailing slash; the SDK appends
-// /{plan}/v2/ automatically.
+// not include the plan segment; an optional trailing slash is removed.
+// The SDK appends /{plan}/v2/ automatically.
 func WithBaseURL(url string) Option {
 	return func(c *Client) {
 		if url != "" {
-			c.baseURL = url
+			c.baseURL = strings.TrimRight(url, "/")
 		}
 	}
 }

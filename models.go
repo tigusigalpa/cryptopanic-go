@@ -14,6 +14,7 @@ import (
 // compatibility.
 type Filter string
 
+// Filter values identify the documented post-filter options.
 const (
 	FilterRising    Filter = "rising"
 	FilterHot       Filter = "hot"
@@ -27,6 +28,7 @@ const (
 // Kind represents a known posts kind value.
 type Kind string
 
+// Kind values identify the documented post kinds.
 const (
 	KindNews  Kind = "news"
 	KindMedia Kind = "media"
@@ -36,6 +38,7 @@ const (
 // PanicPeriod represents a known panic period value.
 type PanicPeriod string
 
+// PanicPeriod values identify the supported panic-score time windows.
 const (
 	PanicPeriod1h  PanicPeriod = "1h"
 	PanicPeriod6h  PanicPeriod = "6h"
@@ -45,6 +48,7 @@ const (
 // PanicSort represents a known panic sort direction.
 type PanicSort string
 
+// PanicSort values identify the supported panic-score sort directions.
 const (
 	PanicSortAsc  PanicSort = "asc"
 	PanicSortDesc PanicSort = "desc"
